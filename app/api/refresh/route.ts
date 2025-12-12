@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReleases } from '@/lib/github';
 import { updateReleaseCache, clearCache } from '@/lib/cache';
-import { readRepositoryUrls } from '@/lib/utils';
+import { readRepositoryUrls } from '@/lib/server-utils';
 
 export async function GET(request: NextRequest) {
   try {
