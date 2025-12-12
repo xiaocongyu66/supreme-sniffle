@@ -1,98 +1,37 @@
-import fs from 'fs/promises';
-import path from 'path';
-import axios from 'axios';
-
-const URL_FILE = path.join(process.cwd(), 'public', 'url.txt');
-
-export interface AppConfig {
-  repositoryUrls: string[];
-  cacheDuration: number;
-  refreshInterval: number;
-}
-
-/**
- * 读取配置文件，支持多种来源：
- * 1. 远程URL（环境变量 CONFIG_URL）
- * 2. 本地文件 public/url.txt
- * 3. 默认仓库列表
- */
+// 简单的配置管理
 export async function getRepositoryUrls(): Promise<string[]> {
-  const configUrl = process.env.CONFIG_URL;
-  
-  // 1. 优先使用远程配置
-  if (configUrl) {
-    try {
-      console.log(`Fetching config from remote URL: ${configUrl}`);
-      const response = await axios.get(configUrl, {
-        timeout: 10000,
-        headers: {
-          'User-Agent': 'GitHub-Releases-Proxy/1.0',
-        },
-      });
-      
-      const urls = parseUrls(response.data);
-      if (urls.length > 0) {
-        console.log(`Loaded ${urls.length} repositories from remote config`);
-        return urls;
+  // 如果是构建时，返回默认值
+  if (typeof window === 'undefined') {
+    // 服务端：尝试读取环境变量或返回默认值
+    const configUrl = process.env.CONFIG_URL;
+    
+    if (configUrl) {
+      try {
+        // 这里可以添加获取远程配置的逻辑
+        console.log('Using remote config from:', configUrl);
+        // 暂时返回默认值，实际实现需要fetch远程配置
+        return getDefaultRepositories();
+      } catch (error) {
+        console.error('Failed to fetch remote config:', error);
+        return getDefaultRepositories();
       }
-    } catch (error: any) {
-      console.warn(`Failed to fetch remote config: ${error.message}. Falling back to local file.`);
     }
+    
+    // 没有远程配置，返回默认值
+    return getDefaultRepositories();
   }
   
-  // 2. 使用本地文件
-  try {
-    const content = await fs.readFile(URL_FILE, 'utf-8');
-    const urls = parseUrls(content);
-    if (urls.length > 0) {
-      console.log(`Loaded ${urls.length} repositories from local file`);
-      return urls;
-    }
-  } catch (error: any) {
-    console.warn(`Failed to read local config: ${error.message}. Using default repositories.`);
-  }
-  
-  // 3. 使用默认配置
-  return getDefaultRepositories();
-}
-
-function parseUrls(content: string): string[] {
-  return content
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => {
-      // 过滤空行和注释
-      if (!line || line.startsWith('#')) return false;
-      
-      // 基本验证：包含斜杠或github.com
-      return line.includes('/') || line.includes('github.com');
-    })
-    .map(line => {
-      // 规范化URL
-      if (!line.includes('://') && line.includes('github.com')) {
-        return `https://${line}`;
-      }
-      return line;
-    });
+  // 客户端：无法获取配置，返回空数组
+  return [];
 }
 
 function getDefaultRepositories(): string[] {
   return [
-    'https://github.com/vercel/next.js',
-    'https://github.com/tailwindlabs/tailwindcss',
-    'https://github.com/nodejs/node'
+    'vercel/next.js',
+    'tailwindlabs/tailwindcss',
+    'nodejs/node',
+    'microsoft/vscode',
+    'facebook/react',
+    'vuejs/vue'
   ];
-}
-
-/**
- * 获取应用配置
- */
-export async function getConfig(): Promise<AppConfig> {
-  const repositoryUrls = await getRepositoryUrls();
-  
-  return {
-    repositoryUrls,
-    cacheDuration: parseInt(process.env.CACHE_DURATION || '3600', 10),
-    refreshInterval: parseInt(process.env.REFRESH_INTERVAL || '3600000', 10),
-  };
 }

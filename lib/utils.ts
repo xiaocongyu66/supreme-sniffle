@@ -1,5 +1,4 @@
-// 这是一个纯客户端工具函数库，不包含任何Node.js特定模块
-
+// 客户端工具函数
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
   
@@ -11,23 +10,27 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch (error) {
+    return dateString;
+  }
 }
 
 export function generateProxyUrl(originalUrl: string, baseUrl: string): string {
   try {
-    // 编码整个URL作为路径参数
+    // 编码URL，确保特殊字符正确处理
     const encodedUrl = encodeURIComponent(originalUrl);
     return `${baseUrl}/api/proxy/${encodedUrl}`;
   } catch (error) {
-    // 如果URL无效，返回原始URL
+    console.error('Error generating proxy URL:', error);
     return originalUrl;
   }
 }

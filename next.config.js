@@ -1,13 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // 环境变量必须为字符串类型
   env: {
     GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
     REFRESH_INTERVAL: process.env.REFRESH_INTERVAL || '3600000',
+    CONFIG_URL: process.env.CONFIG_URL || '',
   },
   
-  // 代理下载的URL重写规则
   async rewrites() {
     return [
       {
@@ -17,7 +16,6 @@ const nextConfig = {
     ];
   },
   
-  // CORS 头设置
   async headers() {
     return [
       {
@@ -31,14 +29,13 @@ const nextConfig = {
     ];
   },
   
-  // 禁用严格模式以便在Cloudflare上运行
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  // 禁用某些Node.js模块在客户端的使用
+  
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

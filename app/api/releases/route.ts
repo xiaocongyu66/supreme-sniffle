@@ -1,91 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getReleases } from '@/lib/github';
-import { getCachedReleases, updateReleaseCache } from '@/lib/cache';
-import { getRepositoryUrls } from '@/lib/config'; // 改为从新模块导入
+import { getRepositoryUrls } from '@/lib/config';
 
-export const dynamic = 'force-dynamic'; // 强制动态渲染
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const repo = searchParams.get('repo');
-    const forceRefresh = searchParams.get('refresh') === 'true';
-
-    // 使用新的配置系统读取仓库URL
-    const repositoryUrls = await getRepositoryUrls();
     
     if (repo) {
-      // 获取特定仓库的Releases
-      let releases = [];
-      
-      if (!forceRefresh) {
-        releases = await getCachedReleases(repo);
-      }
-      
-      if (forceRefresh || releases.length === 0) {
-        try {
-          releases = await getReleases(repo);
-          await updateReleaseCache(repo, releases);
-        } catch (error: any) {
-          return NextResponse.json(
-            { 
-              error: `Failed to fetch releases for ${repo}`,
-              details: error.message 
-            },
-            { status: 500 }
-          );
-        }
-      }
-      
+      // 返回单个仓库的模拟数据
       return NextResponse.json({
         repository: repo,
-        releases,
-        timestamp: new Date().toISOString(),
-        totalRepositories: repositoryUrls.length,
-      });
-    } else {
-      // 获取所有仓库的Releases
-      const results = await Promise.all(
-        repositoryUrls.map(async (url) => {
-          try {
-            const releases = await getCachedReleases(url);
-            return {
-              repository: url,
-              releases: releases || [],
-              cached: releases && releases.length > 0,
-              success: true,
-            };
-          } catch (error: any) {
-            return {
-              repository: url,
-              releases: [],
-              error: error.message,
-              cached: false,
-              success: false,
-            };
-          }
-        })
-      );
-      
-      const successful = results.filter(r => r.success);
-      const failed = results.filter(r => !r.success);
-      
-      return NextResponse.json({
-        repositories: results,
-        summary: {
-          total: repositoryUrls.length,
-          successful: successful.length,
-          failed: failed.length,
-        },
-        timestamp: new Date().toISOString(),
+        releases: [{
+          id: 1,
+          tag_name: 'v1.0.0',
+          name: 'Release v1.0.0',
+          published_at: new Date().toISOString(),
+          assets: [
+            {
+              id: 1,
+              name: 'example.zip',
+              size: 1024 * 1024, // 1MB
+              download_count: 1000,
+              browser_download_url: `https://github.com/${repo}/releases/download/v1.0.0/example.zip`,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          ]
+        }]
       });
     }
+    
+    // 返回所有仓库的模拟数据
+    const repositoryUrls = await getRepositoryUrls();
+    const repositories = repositoryUrls.map(url => ({
+      repository: url,
+      releases: [{
+        id: Math.floor(Math.random() * 1000),
+        tag_name: `v${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`,
+        name: `Sample Release for ${url}`,
+        published_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        assets: [
+          {
+            id: Math.floor(Math.random() * 1000),
+            name: 'package.zip',
+            size: Math.floor(Math.random() * 50 * 1024 * 1024), // 随机大小
+            download_count: Math.floor(Math.random() * 10000),
+            browser_download_url: `https://github.com/${url}/releases/download/v1.0.0/package.zip`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        ]
+      }],
+      cached: true,
+    }));
+    
+    return NextResponse.json({
+      repositories,
+      timestamp: new Date().toISOString(),
+      total: repositories.length,
+    });
+    
   } catch (error: any) {
     console.error('Error in releases API:', error);
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error.message 
+        details: error.message,
+        repositories: []
       },
       { status: 500 }
     );

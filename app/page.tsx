@@ -2,60 +2,80 @@ import FileList from '@/components/FileList';
 import { getRepositoryUrls } from '@/lib/config';
 
 export default async function Home() {
-  // 使用新的配置系统读取仓库URL
+  // 获取仓库URL列表
   const urls = await getRepositoryUrls();
   
   return (
-    <main className="min-h-screen py-8 bg-gradient-to-br from-gray-50 to-gray-100">
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        {/* 页面标题区域 */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
             GitHub Releases Proxy
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Proxy for GitHub Releases with caching, rate limit management, and remote configuration
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            A proxy service for GitHub releases with caching, rate limit management, and remote configuration support
           </p>
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm">
-            <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-              <span className="text-gray-700">Tracking <strong>{urls.length}</strong> repositories</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-              <span className="text-gray-700">Last updated: {new Date().toLocaleDateString()}</span>
-            </div>
+          <div className="mt-4 inline-flex items-center space-x-4 text-sm text-gray-500">
+            <span className="inline-flex items-center">
+              <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+              Active • Tracking {urls.length} repositories
+            </span>
+            <span>•</span>
+            <span>Updated: {new Date().toLocaleDateString()}</span>
           </div>
         </div>
         
-        <FileList initialUrls={urls} />
+        {/* 主内容区域 */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <FileList initialUrls={urls} />
+        </div>
         
-        {/* 配置信息面板 */}
-        <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuration</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Configuration Sources</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li className="flex items-center">
-                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                  Remote URL: {process.env.CONFIG_URL ? '✓ Configured' : 'Not set'}
-                </li>
-                <li className="flex items-center">
-                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
-                  Local file: <code className="ml-1 px-1 bg-gray-100 rounded">public/url.txt</code>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Current Repositories</h4>
-              <div className="max-h-32 overflow-y-auto text-sm">
-                {urls.map((url, index) => (
-                  <div key={index} className="py-1 border-b border-gray-100 last:border-b-0">
-                    <code className="text-gray-600 truncate block">{url}</code>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* 页脚信息 */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              API Endpoints
+            </h3>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li><code className="bg-gray-100 px-2 py-1 rounded">GET /api/releases</code> - All repositories</li>
+              <li><code className="bg-gray-100 px-2 py-1 rounded">GET /api/releases?repo=owner/repo</code> - Specific repo</li>
+              <li><code className="bg-gray-100 px-2 py-1 rounded">GET /api/refresh</code> - Refresh cache</li>
+              <li><code className="bg-gray-100 px-2 py-1 rounded">GET /download/[url]</code> - Proxy download</li>
+            </ul>
+          </div>
+          
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Configuration
+            </h3>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li><strong>Remote Config:</strong> {process.env.CONFIG_URL ? 'Enabled' : 'Disabled'}</li>
+              <li><strong>GitHub Token:</strong> {process.env.GITHUB_TOKEN ? 'Configured' : 'Not set'}</li>
+              <li><strong>Cache Duration:</strong> {process.env.CACHE_DURATION || '3600'}s</li>
+              <li><strong>Repositories:</strong> {urls.length} configured</li>
+            </ul>
+          </div>
+          
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Deployment
+            </h3>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li><strong>Platform:</strong> Cloudflare Pages</li>
+              <li><strong>Framework:</strong> Next.js 14</li>
+              <li><strong>Environment:</strong> Production</li>
+              <li><strong>Build Status:</strong> ✅ Success</li>
+            </ul>
           </div>
         </div>
       </div>
