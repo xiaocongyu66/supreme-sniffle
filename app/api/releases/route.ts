@@ -1,27 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getReleases, parseGitHubUrl } from '@/lib/github';
+import { getReleases } from '@/lib/github';
 import { getCachedReleases, updateReleaseCache } from '@/lib/cache';
-import { readRepositoryUrls } from '@/lib/utils';
+import { readRepositoryUrls } from '@/lib/server-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const apiKey = process.env.API_KEY;
-    
-    // Check API key if set
-    if (apiKey && authHeader !== `Bearer ${apiKey}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const repo = searchParams.get('repo');
     const forceRefresh = searchParams.get('refresh') === 'true';
 
+    // 从public/url.txt读取仓库列表
+    const repositoryUrls = await readRepositoryUrls();
+
     if (repo) {
-      // Get releases for specific repository
+      // 获取特定仓库的Releases
       let releases = [];
       
       if (!forceRefresh) {
@@ -29,48 +21,70 @@ export async function GET(request: NextRequest) {
       }
       
       if (forceRefresh || releases.length === 0) {
-        releases = await getReleases(repo);
-        await updateReleaseCache(repo, releases);
+        try {
+          releases = await getReleases(repo);
+          await updateReleaseCache(repo, releases);
+        } catch (error: any) {
+          return NextResponse.json(
+            { 
+              error: `Failed to fetch releases for ${repo}`,
+              details: error.message 
+            },
+            { status: 500 }
+          );
+        }
       }
       
       return NextResponse.json({
         repository: repo,
         releases,
         timestamp: new Date().toISOString(),
+        totalRepositories: repositoryUrls.length,
       });
     } else {
-      // Get releases for all repositories in url.txt
-      const urls = await readRepositoryUrls();
+      // 获取所有仓库的Releases
       const results = await Promise.all(
-        urls.map(async (url) => {
+        repositoryUrls.map(async (url) => {
           try {
             const releases = await getCachedReleases(url);
             return {
               repository: url,
-              releases,
-              cached: releases.length > 0,
+              releases: releases || [],
+              cached: releases && releases.length > 0,
+              success: true,
             };
-          } catch (error) {
+          } catch (error: any) {
             return {
               repository: url,
-              error: 'Failed to fetch releases',
               releases: [],
+              error: error.message,
               cached: false,
+              success: false,
             };
           }
         })
       );
       
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
+      
       return NextResponse.json({
         repositories: results,
-        count: urls.length,
+        summary: {
+          total: repositoryUrls.length,
+          successful: successful.length,
+          failed: failed.length,
+        },
         timestamp: new Date().toISOString(),
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in releases API:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error.message 
+      },
       { status: 500 }
     );
   }

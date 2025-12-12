@@ -28,12 +28,6 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
         ],
       },
-      {
-        source: '/download/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-        ],
-      },
     ];
   },
   
@@ -43,6 +37,19 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // 禁用某些Node.js模块在客户端的使用
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        path: false,
+        child_process: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
   },
 };
 

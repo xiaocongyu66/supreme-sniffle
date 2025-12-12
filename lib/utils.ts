@@ -1,47 +1,34 @@
-import fs from 'fs/promises';
-import path from 'path';
-
-const URL_FILE = path.join(process.cwd(), 'public', 'url.txt');
-
-export async function readRepositoryUrls(): Promise<string[]> {
-  try {
-    const content = await fs.readFile(URL_FILE, 'utf-8');
-    return content
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('#'));
-  } catch (error) {
-    console.error('Error reading url.txt:', error);
-    return [];
-  }
-}
+// 这是一个纯客户端工具函数库，不包含任何Node.js特定模块
 
 export function formatFileSize(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let size = bytes;
-  let unitIndex = 0;
+  if (bytes === 0) return '0 B';
   
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return `${size.toFixed(2)} ${units[unitIndex]}`;
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleString();
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export function generateProxyUrl(originalUrl: string, baseUrl: string): string {
   try {
-    const url = new URL(originalUrl);
-    const path = encodeURIComponent(url.pathname);
-    return `${baseUrl}/api/proxy/${url.hostname}${path}`;
+    // 编码整个URL作为路径参数
+    const encodedUrl = encodeURIComponent(originalUrl);
+    return `${baseUrl}/api/proxy/${encodedUrl}`;
   } catch (error) {
-    // If URL is invalid, encode the whole string
-    return `${baseUrl}/api/proxy/${encodeURIComponent(originalUrl)}`;
+    // 如果URL无效，返回原始URL
+    return originalUrl;
   }
 }
 
