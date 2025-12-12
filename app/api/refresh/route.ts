@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReleases } from '@/lib/github';
 import { updateReleaseCache, clearCache } from '@/lib/cache';
-import { readRepositoryUrls } from '@/lib/server-utils';
+import { getRepositoryUrls } from '@/lib/config'; // 改为从新模块导入
+
+export const dynamic = 'force-dynamic'; // 强制动态渲染
 
 export async function GET(request: NextRequest) {
   try {

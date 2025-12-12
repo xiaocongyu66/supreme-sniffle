@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReleases } from '@/lib/github';
 import { getCachedReleases, updateReleaseCache } from '@/lib/cache';
-import { readRepositoryUrls } from '@/lib/server-utils';
+import { getRepositoryUrls } from '@/lib/config'; // 改为从新模块导入
+
+export const dynamic = 'force-dynamic'; // 强制动态渲染
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,9 +11,9 @@ export async function GET(request: NextRequest) {
     const repo = searchParams.get('repo');
     const forceRefresh = searchParams.get('refresh') === 'true';
 
-    // 从public/url.txt读取仓库列表
-    const repositoryUrls = await readRepositoryUrls();
-
+    // 使用新的配置系统读取仓库URL
+    const repositoryUrls = await getRepositoryUrls();
+    
     if (repo) {
       // 获取特定仓库的Releases
       let releases = [];

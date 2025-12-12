@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { getFileContent } from '@/lib/github';
 
+export const dynamic = 'force-dynamic'; // 添加这行，强制动态渲染
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { path: string[] } }
